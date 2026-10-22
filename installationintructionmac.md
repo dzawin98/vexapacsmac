@@ -80,6 +80,7 @@ Hentikan semuanya: `./mac/stop-all.sh`
 | `node_modules/`, `dist/`, `build/`, `.venv/`, `__pycache__/` | Artefak dependency & build |
 | `.env`, `settings.json`, `*.pem` (private), `*.lic` | Secret / kredensial lokal |
 | `installer/payload/`, `installer/vendor/`, `installer/Output/` | Payload installer Windows (1–15 GB) |
+| `server-hotfix/` | Hotfix produksi Windows (menyalin build viewer ke `C:\Program Files`, backup `ProgramData`) + payload duplikat `dist` — tidak relevan di macOS |
 | `tools/service-monitor/*.exe` | Aplikasi WinForms Windows; source `.cs` tetap disertakan sebagai referensi |
 | `RIS/backend/mwl_scp/.venv/`, `*/server/data/` | Venv Python & data runtime viewer |
 
