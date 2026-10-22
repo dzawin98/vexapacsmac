@@ -1,0 +1,14 @@
+{
+  "name": "nexia-ecg-viewer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone VEXA ECG service",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "dicom-parser": "^1.8.21"
+  }
+}

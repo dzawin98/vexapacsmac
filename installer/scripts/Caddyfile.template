@@ -1,0 +1,94 @@
+{
+	admin off
+	auto_https disable_redirects
+}
+
+__SITE_ADDRESSES__ {
+	encode zstd gzip
+
+	header {
+		-Server
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer-when-downgrade
+	}
+
+	@viewerToken path /viewer/token/*
+	handle @viewerToken {
+		reverse_proxy 127.0.0.1:3001
+	}
+
+	@viewerAuth path /viewer/api/auth /viewer/api/auth/*
+	handle @viewerAuth {
+		reverse_proxy 127.0.0.1:5994
+	}
+
+	@viewerRs path /viewer/rs /viewer/rs/*
+	handle @viewerRs {
+		# PACS receives its native DICOMweb root (/rs), not the viewer UI prefix.
+		uri strip_prefix /viewer
+		reverse_proxy 127.0.0.1:5001
+	}
+
+	@viewerWadoUri path /viewer/wadouri /viewer/wadouri/*
+	handle @viewerWadoUri {
+		uri strip_prefix /viewer
+		reverse_proxy 127.0.0.1:5001
+	}
+
+	@mobileAuth path /mobile/api/auth /mobile/api/auth/*
+	handle @mobileAuth {
+		reverse_proxy 127.0.0.1:5992
+	}
+
+	@mobileRs path /mobile/rs /mobile/rs/*
+	handle @mobileRs {
+		# PACS receives its native DICOMweb root (/rs), not the mobile UI prefix.
+		uri strip_prefix /mobile
+		reverse_proxy 127.0.0.1:5001
+	}
+
+	@mobileWadoUri path /mobile/wadouri /mobile/wadouri/*
+	handle @mobileWadoUri {
+		uri strip_prefix /mobile
+		reverse_proxy 127.0.0.1:5001
+	}
+
+	# Keep the public prefix when proxying. The React applications use it as
+	# their router basename, so stripping it breaks login, Service, and RIS
+	# launch-token redirects after installation.
+	handle /viewer* {
+		reverse_proxy 127.0.0.1:5994
+	}
+
+	handle /mobile* {
+		reverse_proxy 127.0.0.1:5992
+	}
+
+	handle_path /ecg* {
+		reverse_proxy 127.0.0.1:7771
+	}
+
+	@pacsViewer path /pacs /pacs/*
+	handle @pacsViewer {
+		uri strip_prefix /pacs
+		reverse_proxy 127.0.0.1:5001
+	}
+
+	@dicomwebRs path /rs /rs/*
+	handle @dicomwebRs {
+		reverse_proxy 127.0.0.1:5001
+	}
+
+	@dicomwebWadoUri path /wadouri /wadouri/*
+	handle @dicomwebWadoUri {
+		reverse_proxy 127.0.0.1:5001
+	}
+
+	handle /api/* {
+		reverse_proxy 127.0.0.1:3001
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:8080
+	}
+}

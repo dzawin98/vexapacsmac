@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+'use strict';
+
+const path = require('path');
+const { spawn } = require('child_process');
+
+const packageRoot = path.join(__dirname, '..');
+const appPath = path.join(packageRoot, 'build', 'app.js');
+
+process.chdir(packageRoot);
+console.log('starting dicomweb-pacs...');
+
+const child = spawn(process.execPath, [appPath], { stdio: 'inherit' });
+child.on('close', (code) => {
+  process.exit(code ?? 0);
+});

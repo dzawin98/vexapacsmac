@@ -1,0 +1,14 @@
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.*
+logs/
+*.log
+data/
+*.dcm
+*.dicom
+*.tmp
+Thumbs.db
+.DS_Store

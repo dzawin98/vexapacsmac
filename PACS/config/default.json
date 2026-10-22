@@ -1,0 +1,27 @@
+{
+  "source": {
+    "aet": "VEXA_INT",
+    "ip": "127.0.0.1",
+    "port": "8890"
+  },
+  "peers": [
+    {
+      "aet": "CONQUESTSRV1",
+      "ip": "127.0.0.1",
+      "port": "5678"
+    }
+  ],
+  "transferSyntax": "1.2.840.10008.1.2",
+  "mimeType": "application/dicom",
+  "logDir": "./logs",
+  "storagePath":  "./DATA",
+  "httpPort": 5001,
+  "httpIp": "0.0.0.0",
+  "qidoMinChars": 0,
+  "qidoAppendWildcard": true,
+  "permissiveMode": true,
+  "verboseLogging": false,
+  "dimseOutboundCompression": false,
+  "dimseStorageCompression": true,
+  "dimseStorageTransferSyntax": "1.2.840.10008.1.2.4.90"
+}

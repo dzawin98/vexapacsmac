@@ -1,0 +1,31 @@
+node_modules/
+dist/
+.vite/
+coverage/
+playwright-report/
+
+# Runtime/storage data. Do not commit patient images or production logs.
+data/
+logs/
+*.log
+*.tmp
+__pycache__/
+*.pyc
+.venv/
+mwl-outbox/
+mwl-debug-outbox/
+
+# Local secrets/config generated during installation.
+.env
+.env.*
+!*.env.example
+backend/.env
+
+# Large generated bundles/backups are rebuilt on the server.
+build/
+public.backup-*/
+
+# OS/editor files.
+Thumbs.db
+.DS_Store
+.vscode/

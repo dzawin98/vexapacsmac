@@ -1,0 +1,14 @@
+diff --git a/node_modules/@cornerstonejs/dicom-image-loader/dist/esm/shared/decoders/decodeJPEG2000.js b/node_modules/@cornerstonejs/dicom-image-loader/dist/esm/shared/decoders/decodeJPEG2000.js
+index ef7334f..c1500fa 100644
+--- a/node_modules/@cornerstonejs/dicom-image-loader/dist/esm/shared/decoders/decodeJPEG2000.js
++++ b/node_modules/@cornerstonejs/dicom-image-loader/dist/esm/shared/decoders/decodeJPEG2000.js
+@@ -17,6 +17,9 @@ export function initialize(decodeConfig) {
+             }
+             return f;
+         },
++        // Silence OpenJPEG's internal [INFO] prints that flood the console.
++        print: () => {},
++        printErr: () => {},
+     });
+     return new Promise((resolve, reject) => {
+         openJpegModule.then((instance) => {

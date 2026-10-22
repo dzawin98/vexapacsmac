@@ -1,0 +1,81 @@
+{
+  "name": "dicomweb-pacs",
+  "version": "1.8.0",
+  "description": "A self contained easy to use PACS with DICOMWEB and DIMSE service support",
+  "main": "build/app.js",
+  "scripts": {
+    "start": "ts-node src/app.ts",
+    "build": "tsc -p ./tsconfig.json",
+    "import": "ts-node src/storescu.ts",
+    "warm-cache": "ts-node src/warmCache.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/knopkem/dicomweb-pacs.git"
+  },
+  "keywords": [
+    "DICOMWEB",
+    "PACS",
+    "ARCHIVE",
+    "DIMSE",
+    "DICOM",
+    "STORE",
+    "MOVE",
+    "GET",
+    "FIND",
+    "SCP",
+    "SCU",
+    "OHIF",
+    "VIEWER",
+    "ORTHANC",
+    "DCMTK",
+    "DCM4CHEE",
+    "PACSONE",
+    "CONQUEST"
+  ],
+  "author": "Michael Knopke",
+  "license": "MIT",
+  "bin": {
+    "dicomweb-pacs": "bin/dicomweb-pacs"
+  },
+  "bugs": {
+    "url": "https://github.com/knopkem/dicomweb-pacs/issues"
+  },
+  "homepage": "https://github.com/knopkem/dicomweb-pacs#readme",
+  "dependencies": {
+    "@fastify/autoload": "^6.3.1",
+    "@fastify/cors": "^11.2.0",
+    "@fastify/helmet": "^13.0.2",
+    "@fastify/sensible": "^6.0.4",
+    "@fastify/static": "^9.0.0",
+    "@iwharris/dicom-data-dictionary": "^1.26.0",
+    "@types/pg": "^8.20.0",
+    "close-with-grace": "^2.5.0",
+    "config": "^4.4.1",
+    "dicom-dimse-native": "^2.6.1",
+    "dicom-parser": "^1.8.21",
+    "fastify": "^5.8.2",
+    "pg": "^8.21.0",
+    "pino": "^10.3.1",
+    "pino-roll": "^4.0.0",
+    "sharp": "^0.35.2",
+    "tslib": "^2.6.2"
+  },
+  "devDependencies": {
+    "@types/config": "^4.4.0",
+    "@types/node": "^25.5.0",
+    "@typescript-eslint/eslint-plugin": "^8.57.1",
+    "@typescript-eslint/parser": "^8.57.1",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "pkg": {
+    "assets": [
+      "./config/default.json",
+      "./node_modules/dicom-dimse-native/build/Release/dcmtk.node"
+    ]
+  }
+}

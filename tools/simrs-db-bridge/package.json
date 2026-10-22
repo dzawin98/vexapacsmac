@@ -1,0 +1,18 @@
+{
+  "name": "vexa-simrs-db-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VEXA SIMRS DB-to-DB bridge service",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "once": "node server.js --once",
+    "setup:postgres:test": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/setup-postgres-test-db.ps1"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "mssql": "^11.0.1",
+    "mysql2": "^3.14.5",
+    "pg": "^8.21.0"
+  }
+}

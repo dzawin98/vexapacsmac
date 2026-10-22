@@ -1,0 +1,10 @@
+payload/
+Output/
+vendor/license/private*.pem
+vendor/license/*.lic
+vendor/node/
+vendor/postgresql/
+vendor/python/
+vendor/vcredist/
+vendor/nssm/*.zip
+

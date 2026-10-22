@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/png" href="logo.png" />
+    <title>VEXA ECG</title>
+    <style>
+      :root { color-scheme: dark; font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; background: #101317; color: #e7eaef; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; overflow: hidden; background: #17151a; }
+      .viewer-frame { display: grid; grid-template-rows: 46px 1fr; height: 100vh; }
+      .appbar { display: flex; align-items: center; gap: 18px; border-bottom: 1px solid #363139; background: #2a262d; padding: 0 14px; color: #f8fafc; }
+      .brand { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 800; letter-spacing: .02em; }
+      .brand-logo { width: 30px; height: 30px; border-radius: 8px; box-shadow: 0 0 18px rgba(56,189,248,.18); }
+      .shell { --study-panel-width: 190px; --right-panel-width: 360px; position: relative; display: grid; grid-template-columns: var(--study-panel-width) minmax(0, 1fr) var(--right-panel-width); min-height: 0; }
+      .shell.study-panel-hidden { grid-template-columns: 0px minmax(0, 1fr) var(--right-panel-width); }
+      .shell.right-panel-hidden { grid-template-columns: var(--study-panel-width) minmax(0, 1fr) 0px; }
+      .shell.study-panel-hidden.right-panel-hidden { grid-template-columns: 0px minmax(0, 1fr) 0px; }
+      .study-list { position: relative; min-width: 0; border-right: 1px solid #3a3540; background: #211f26; min-height: 0; overflow: auto; padding: 8px 6px; }
+      .shell.study-panel-hidden .study-list, .shell.right-panel-hidden aside { overflow: hidden; opacity: 0; pointer-events: none; border-color: transparent; }
+      .panel-resizer { position: absolute; z-index: 8; top: 0; bottom: 0; width: 7px; cursor: col-resize; touch-action: none; opacity: 0; transition: opacity .15s ease; }
+      .panel-resizer::after { content: ""; position: absolute; top: 0; bottom: 0; left: 3px; width: 1px; background: #38bdf8; }
+      .study-list:hover .panel-resizer, aside:hover .panel-resizer, .panel-resizer.dragging { opacity: .7; }
+      .study-list .panel-resizer { right: 0; }
+      aside .panel-resizer { left: 0; }
+      .edge-toggle { position: absolute; z-index: 18; top: 50%; width: 22px; height: 36px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 0; background: transparent; color: #94a3b8; box-shadow: none; transform: translateY(-50%); transition: color .15s ease, opacity .15s ease; opacity: .72; }
+      .edge-toggle:hover, .edge-toggle:focus-visible { background: transparent; color: #38bdf8; opacity: 1; transform: translateY(-50%); outline: none; }
+      .edge-toggle svg { width: 16px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+      .edge-toggle-left { left: calc(var(--study-panel-width) - 11px); }
+      .edge-toggle-right { right: calc(var(--right-panel-width) - 11px); }
+      .shell.study-panel-hidden .edge-toggle-left { left: 0; }
+      .shell.right-panel-hidden .edge-toggle-right { right: 0; }
+      .study-list h2 { margin: 0 0 6px 4px; color: #cbd5e1; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+      .patient-card { padding: 0 4px 7px; margin-bottom: 4px; border-bottom: 1px solid rgba(148,163,184,.14); }
+      .patient-name { color: #f8fafc; font-size: 11px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .patient-meta { color: #94a3b8; font-size: 10px; margin-top: 2px; }
+      .study-card { width: 100%; height: auto; text-align: left; display: block; border: 0; border-radius: 4px; background: transparent; padding: 6px 5px; box-shadow: none; }
+      .study-card.active { background: rgba(14,165,233,.16); }
+      .study-card + .study-card { margin-top: 1px; }
+      .study-card-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+      .study-badge { color: #7dd3fc; background: transparent; border: 0; padding: 0; font-size: 9px; font-weight: 800; }
+      .study-name { color: #f8fafc; font-size: 11px; font-weight: 700; margin-top: 3px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .study-detail { color: #94a3b8; font-size: 10px; margin-top: 2px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .study-wave { display: none; }
+      .main { min-width: 0; padding: 14px 18px; overflow: auto; background: #29262d; }
+      .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+      .title { display: flex; align-items: center; gap: 12px; min-width: 0; }
+      .icon { width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center; background: #3b3a42; color: #cbd5e1; border: 1px solid #5b5561; font-size: 10px; }
+      h1 { margin: 0; font-size: 16px; font-weight: 700; }
+      .sub { margin-top: 3px; color: #94a3b8; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .layout-picker { position: relative; }
+      .layout-menu { position: absolute; z-index: 30; right: 0; top: calc(100% + 9px); display: grid; grid-template-columns: repeat(3, 58px); gap: 7px; width: 204px; padding: 10px; border: 1px solid #46505a; border-radius: 14px; background: #17191b; box-shadow: 0 16px 34px rgba(0,0,0,.4); }
+      .layout-menu[hidden] { display: none; }
+      .layout-option { height: 70px; padding: 7px 4px 5px; display: grid; place-items: center; align-content: center; gap: 5px; border-color: transparent; background: transparent; color: #f8fafc; }
+      .layout-option:hover, .layout-option:focus-visible { border-color: #64748b; background: #262b30; }
+      .layout-option.active { border-color: #64748b; background: #24292d; color: #a7f3d0; }
+      .layout-option svg { width: 38px; height: 30px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+      .layout-option span { font-size: 11px; font-weight: 800; line-height: 1; }
+      .calibration-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: start; margin: -2px 0 10px; }
+      .calibration-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+      .control-label { display: inline-flex; align-items: center; gap: 6px; color: #e5e7eb; font-size: 13px; white-space: nowrap; }
+      .zoom-control { min-width: 280px; align-items: center; }
+      .zoom-control input { width: 180px; accent-color: var(--accent); }
+      .zoom-readout { min-width: 82px; color: #cbd5e1; font-size: 12px; }
+      .selection-readout { color: #e5e7eb; font-size: 13px; line-height: 1.45; text-align: left; min-width: 210px; }
+      .selection-readout strong { display: block; color: #f8fafc; font-size: 14px; }
+      select, button { height: 32px; border-radius: 5px; border: 1px solid #4b4650; background: #343039; color: #e5e7eb; padding: 0 10px; }
+      button { cursor: pointer; font-weight: 700; }
+      button.active { border-color: #38bdf8; background: #075985; color: #fff; box-shadow: inset 0 0 0 1px rgba(125,211,252,.18); }
+      .tool-btn { display: inline-flex; align-items: center; gap: 6px; }
+      .controls .tool-btn { position: relative; width: 34px; padding: 0; justify-content: center; flex: 0 0 34px; }
+      .controls .tool-btn::after { content: attr(data-tooltip); position: absolute; z-index: 20; left: 50%; top: calc(100% + 8px); transform: translateX(-50%); padding: 5px 8px; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--surface-3); color: var(--text); font-family: var(--font-ui); font-size: 11px; font-weight: 500; line-height: 1.2; white-space: nowrap; pointer-events: none; display: none; }
+      .controls .tool-btn:hover::after, .controls .tool-btn:focus-visible::after { display: block; }
+      .copy-btn { border-color: #14532d; background: #166534; color: #dcfce7; }
+      .tool-btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      canvas { display: block; width: 100%; min-width: 0; height: 100%; border: 1px solid #5b5561; border-radius: 0; background: #fff; box-shadow: none; }
+      .viewport-grid { display: grid; gap: 10px; min-width: 860px; height: 620px; }
+      .viewport-grid.layout-1x1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+      .viewport-grid.layout-2x1 { grid-template-columns: 1fr; grid-template-rows: repeat(2, 1fr); }
+      .viewport-grid.layout-1x2 { grid-template-columns: repeat(2, 1fr); grid-template-rows: 1fr; }
+      .viewport-grid.layout-2x2 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
+      .viewport-grid.layout-1x3 { grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr; }
+      .viewport-grid.layout-3x1 { grid-template-columns: 1fr; grid-template-rows: repeat(3, 1fr); }
+      .viewport-grid.layout-2x3 { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); }
+      .viewport-grid.layout-3x2 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); }
+      .viewport-grid.layout-3x3 { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); }
+      .viewport { position: relative; display: grid; grid-template-rows: 24px minmax(0, 1fr); min-width: 0; min-height: 0; overflow: auto; border: 2px solid transparent; background: #111827; }
+      .viewport.active { border-color: #38bdf8; box-shadow: 0 0 22px rgba(56,189,248,.18); }
+      .viewport-label { position: sticky; left: 0; top: 0; z-index: 2; height: 24px; display: flex; align-items: center; min-width: 100%; color: #cbd5e1; background: #211f26; border-bottom: 1px solid #3a3540; padding: 0 8px; font-size: 11px; font-weight: 800; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .readout { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+      .comparison { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 12px; margin-top: 12px; }
+      .compare-card { height: auto; text-align: left; border: 1px solid #3f3a44; background: #211f26; border-radius: 8px; padding: 10px; }
+      .compare-card.active { border-color: rgba(56,189,248,.75); }
+      .compare-title { color: #f8fafc; font-size: 12px; font-weight: 800; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 8px; }
+      .compare-canvas { width: 100%; min-width: 0; height: 220px; border-radius: 4px; }
+      .card { border: 1px solid #3f3a44; background: #242129; border-radius: 4px; padding: 10px; }
+      .label { color: #94a3b8; font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+      .value { margin-top: 5px; font-size: 16px; font-weight: 800; }
+      aside { position: relative; min-width: 0; border-left: 1px solid #3a3540; background: #242129; padding: 10px; overflow: auto; }
+      .panel-title { font-size: 12px; font-weight: 800; color: #e5e7eb; margin: 0 0 7px; text-transform: uppercase; letter-spacing: .08em; }
+      .panel-section { margin-bottom: 16px; }
+      .data-table { width: 100%; border-collapse: separate; border-spacing: 0; overflow: hidden; border: 1px solid rgba(148,163,184,.16); border-radius: 8px; font-size: 11px; background: #1d1a22; }
+      .data-table th { color: #94a3b8; background: rgba(15,23,42,.32); padding: 7px 8px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid rgba(148,163,184,.14); }
+      .data-table td { color: #dbeafe; padding: 7px 8px; vertical-align: top; border-bottom: 1px solid rgba(148,163,184,.1); }
+      .data-table tr:last-child td { border-bottom: 0; }
+      .data-table td:first-child { color: #f8fafc; font-weight: 700; }
+      .muted-cell { color: #94a3b8 !important; font-weight: 500 !important; }
+      .analysis-text { border: 1px solid rgba(148,163,184,.16); border-radius: 8px; background: #1d1a22; color: #dbeafe; padding: 9px; font-size: 11px; line-height: 1.45; white-space: pre-wrap; }
+      .analysis-actions { display: flex; gap: 8px; margin-bottom: 8px; }
+      .error { padding: 24px; color: #fecaca; }
+      :root {
+        color-scheme: dark;
+        --bg: #101317; --surface: #16191e; --surface-2: #1b1f25; --surface-3: #22272e;
+        --border: #272d36; --border-strong: #343c47;
+        --text: #e7eaef; --text-dim: #b4bcc8; --muted: #8d97a5;
+        --accent: #2e9ad0; --accent-soft: rgba(46, 154, 208, .14);
+        --ok: #3f9d5a; --warn: #c9922e; --alarm: #cf5b52;
+        --font-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+        --font-label: Bahnschrift, "Segoe UI Variable Display", "Segoe UI", sans-serif;
+        --font-mono: Consolas, "Cascadia Mono", ui-monospace, monospace;
+        font-family: var(--font-ui);
+        font-size: 12.5px;
+        line-height: 1.45;
+        background: var(--bg);
+        color: var(--text);
+      }
+      body { background: var(--bg); font-size: 12.5px; }
+      .viewer-frame { grid-template-rows: 50px 1fr; }
+      .appbar { gap: 12px; border-bottom: 1px solid var(--border); background: var(--surface); padding: 0 16px; }
+      .brand { gap: 10px; font-family: var(--font-label); font-size: 14px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+      .brand-logo { width: 26px; height: 26px; border-radius: 4px; box-shadow: none; }
+      .appbar-copy { display: grid; gap: 1px; }
+      .appbar-subtitle { color: var(--muted); font-family: var(--font-mono); font-size: 9.5px; font-weight: 400; letter-spacing: .05em; text-transform: uppercase; }
+      .shell { --study-panel-width: 248px; --right-panel-width: 396px; background: var(--bg); }
+      .study-list, aside { scrollbar-color: #2c333d transparent; scrollbar-width: thin; }
+      .study-list { border-right: 1px solid var(--border); background: var(--surface); padding: 12px 10px; }
+      .study-panel-header { display: flex; align-items: center; justify-content: space-between; margin: 0 0 10px; padding: 0 2px 8px; border-bottom: 1px solid var(--border); }
+      .study-list h2 { margin: 0; color: var(--text-dim); font-family: var(--font-label); font-size: 11px; font-weight: 600; letter-spacing: .06em; }
+      .study-count { min-width: 22px; padding: 2px 6px; border-radius: 3px; background: var(--surface-3); color: var(--text-dim); font-family: var(--font-mono); font-size: 10px; font-weight: 400; text-align: center; }
+      .study-search-wrap { position: relative; margin-bottom: 10px; }
+      .study-search-wrap svg { position: absolute; left: 9px; top: 50%; width: 13px; height: 13px; transform: translateY(-50%); stroke: var(--muted); fill: none; stroke-width: 1.8; pointer-events: none; }
+      .study-search { width: 100%; height: 30px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-family: inherit; font-size: 12px; padding: 0 9px 0 29px; outline: none; }
+      .study-search:focus { border-color: var(--accent); box-shadow: none; }
+      .study-search::placeholder { color: var(--muted); }
+      .patient-card { margin: 0 0 8px; padding: 8px 9px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface-2); }
+      .patient-name { font-size: 12.5px; font-weight: 600; }
+      .patient-meta { color: var(--muted); font-size: 11px; }
+      .study-card { display: block; width: 100%; overflow: visible; margin-top: 2px !important; border: 1px solid transparent; border-left: 2px solid transparent; border-radius: 0 4px 4px 0; padding: 7px 8px; transition: background .12s linear, border-color .12s linear; }
+      .study-card::before { content: none; }
+      .study-card:hover { border-color: transparent; border-left-color: var(--border-strong); background: var(--surface-2); transform: none; }
+      .study-card.active { border-color: transparent; border-left-color: var(--accent); background: var(--surface-3); }
+      .study-badge { color: var(--muted); font-family: var(--font-mono); font-size: 9.5px; font-weight: 400; letter-spacing: .04em; }
+      .study-name { font-size: 12.5px; font-weight: 600; }
+      .study-detail { color: var(--muted); font-size: 10.5px; }
+      .main { padding: 14px 16px 18px; background: var(--bg); }
+      .topbar { margin-bottom: 12px; }
+      h1 { font-family: var(--font-label); font-size: 17px; font-weight: 600; letter-spacing: .01em; }
+      .sub { color: var(--muted); font-size: 11.5px; }
+      select, button { height: 30px; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--surface-2); color: var(--text); font-family: inherit; font-size: 12px; transition: background .12s linear, border-color .12s linear; }
+      button:hover { border-color: var(--accent); background: var(--surface-3); }
+      button:active { transform: none; }
+      button.active { border-color: var(--accent); background: var(--accent-soft); color: #cfe9f6; box-shadow: none; }
+      .controls { padding: 3px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
+      .controls .tool-btn { width: 32px; flex-basis: 32px; }
+      .tool-btn svg { width: 16px; height: 16px; stroke-width: 1.7; }
+      .calibration-bar { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
+      .control-label, .selection-readout { color: var(--text-dim); font-size: 11.5px; }
+      .zoom-readout { color: var(--text); font-family: var(--font-mono); font-size: 11.5px; }
+      .selection-readout { min-width: 220px; font-family: var(--font-mono); font-size: 11px; line-height: 1.5; }
+      .selection-readout strong { color: var(--text); font-size: 12px; }
+      .viewport-grid { gap: 6px; min-width: 0; height: clamp(340px, calc(100vh - 330px), 760px); border-radius: 0; }
+      .viewport { border: 1px solid var(--border); border-radius: 3px; background: #0b0e12; box-shadow: none; }
+      .viewport.active { border-color: var(--accent); box-shadow: none; }
+      .viewport-label { height: 24px; color: var(--text-dim); background: var(--surface-2); border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0; }
+      canvas { border: 0; background: #fff; }
+      .readout { gap: 6px; }
+      .card { border: 1px solid var(--border); border-radius: 4px; background: var(--surface); padding: 9px 10px; }
+      .label { color: var(--muted); font-family: var(--font-label); font-size: 10px; font-weight: 600; letter-spacing: .06em; }
+      .value { color: var(--text); font-family: var(--font-mono); font-size: 14px; font-weight: 400; font-variant-numeric: tabular-nums; }
+      aside { border-left: 1px solid var(--border); background: var(--surface); padding: 12px 12px 16px; }
+      .panel-title { margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); color: var(--text-dim); font-family: var(--font-label); font-size: 10.5px; font-weight: 600; letter-spacing: .06em; }
+      .panel-section { margin-bottom: 16px; }
+      .data-table { border: 1px solid var(--border); border-radius: 4px; background: var(--bg); font-size: 10.5px; }
+      .data-table th { color: var(--muted); background: var(--surface-2); font-family: var(--font-label); font-size: 9.5px; font-weight: 600; letter-spacing: .06em; }
+      .data-table td { color: var(--text-dim); font-family: var(--font-mono); font-size: 10.5px; }
+      .data-table td:first-child { color: var(--text); font-weight: 400; }
+      .analysis-actions { align-items: center; gap: 6px; }
+      .analyze-primary { min-width: 104px; border-color: #2f7396; background: #1b2b36; color: #d3ecf9; font-weight: 600; }
+      .copy-btn { border-color: var(--border-strong); background: var(--surface-2); color: var(--text-dim); }
+      .analysis-progress { display: grid; gap: 6px; margin: 8px 0 10px; }
+      .analysis-progress[hidden] { display: none; }
+      .progress-track { height: 3px; overflow: hidden; border-radius: 2px; background: var(--surface-3); }
+      .progress-fill { width: 0; height: 100%; border-radius: 2px; background: var(--accent); transition: width .25s linear; }
+      .progress-label { display: flex; justify-content: space-between; color: var(--muted); font-family: var(--font-mono); font-size: 10.5px; }
+      .analysis-details { border: 1px solid var(--border); border-radius: 4px; background: var(--bg); }
+      .analysis-details summary { cursor: pointer; padding: 8px 10px; color: var(--text-dim); font-family: var(--font-label); font-size: 10px; font-weight: 600; letter-spacing: .06em; }
+      .analysis-details[open] summary { border-bottom: 1px solid var(--border); }
+      .analysis-text { min-height: 80px; border: 0; border-radius: 0; background: transparent; color: var(--text-dim); padding: 10px; font-family: var(--font-mono); font-size: 10.5px; line-height: 1.6; }
+      .analysis-result { display: grid; gap: 8px; }
+      .analysis-result[hidden] { display: none; }
+      .impression-card { border: 1px solid var(--border); border-left: 3px solid var(--ok); border-radius: 4px; background: var(--surface-2); padding: 11px 12px; }
+      .impression-card[data-severity="urgent"] { border-left-color: var(--warn); }
+      .impression-card[data-severity="critical"] { border-left-color: var(--alarm); }
+      .impression-kicker { color: var(--muted); font-family: var(--font-label); font-size: 10px; font-weight: 600; letter-spacing: .06em; }
+      .impression-headline { margin-top: 5px; color: var(--text); font-size: 13.5px; font-weight: 600; line-height: 1.4; }
+      .impression-summary { margin-top: 6px; color: var(--text-dim); font-size: 11.5px; line-height: 1.5; }
+      .finding-list { display: grid; gap: 4px; }
+      .finding-row { display: grid; grid-template-columns: 6px minmax(86px,.62fr) minmax(0,1.38fr); gap: 8px; align-items: start; padding: 7px 9px; border: 1px solid var(--border); border-radius: 3px; background: var(--bg); font-size: 11px; line-height: 1.4; }
+      .finding-dot { width: 6px; height: 6px; margin-top: 4px; border-radius: 0; background: var(--ok); }
+      .finding-row[data-status="urgent"] .finding-dot { background: var(--warn); box-shadow: none; }
+      .finding-row[data-status="critical"] .finding-dot { background: var(--alarm); }
+      .finding-label { color: var(--text-dim); font-family: var(--font-mono); font-size: 10.5px; font-weight: 400; }
+      .finding-detail { color: var(--muted); }
+      .finding-detail strong { color: var(--text); font-weight: 600; }
+      .analysis-disclaimer { color: var(--muted); font-family: var(--font-mono); font-size: 10px; line-height: 1.5; }
+      .edge-toggle { color: var(--muted); }
+      .edge-toggle:hover, .edge-toggle:focus-visible { color: var(--accent); }
+      @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+      @media (max-width: 1180px) { .shell { --study-panel-width: 210px; --right-panel-width: 340px; } }
+      @media (max-width: 980px) { body { overflow: auto; } .viewer-frame { display: block; height: auto; } .shell { display: block; height: auto; } .study-list { display: none; } aside { border-left: 0; border-top: 1px solid var(--border); } .panel-resizer, .edge-toggle { display: none; } .calibration-bar { grid-template-columns: 1fr; } .readout { grid-template-columns: repeat(2, minmax(0, 1fr)); } .main { padding: 12px; } .viewport-grid { min-width: 720px; } }
+    </style>
+  </head>
+  <body>
+    <div class="viewer-frame">
+      <div class="appbar">
+        <div class="brand"><img class="brand-logo" src="logo.png" alt="VEXA ECG" /><span class="appbar-copy"><span>VEXA ECG</span><span class="appbar-subtitle">Diagnostic waveform workspace</span></span></div>
+      </div>
+      <div class="shell" id="viewerShell">
+      <section class="study-list" id="studyPanel">
+        <div class="panel-resizer" id="studyPanelResizer" role="separator" aria-label="Resize Study List" aria-orientation="vertical"></div>
+        <div class="study-panel-header"><h2>Study timeline</h2><span class="study-count" id="studyCount">0</span></div>
+        <label class="study-search-wrap" aria-label="Search studies"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg><input class="study-search" id="studySearch" type="search" placeholder="Search date or description" autocomplete="off" /></label>
+        <div class="patient-card">
+          <div class="patient-name" id="listPatient">Loading...</div>
+          <div class="patient-meta" id="listPatientMeta">Preparing study</div>
+        </div>
+        <div id="studyCards"></div>
+      </section>
+      <main class="main">
+        <div class="topbar">
+          <div class="title">
+            <div>
+              <h1 id="studyTitle">Loading ECG...</h1>
+              <div class="sub" id="studySub">Preparing DICOM waveform</div>
+            </div>
+          </div>
+          <div class="controls">
+            <div class="layout-picker">
+              <button id="viewportLayoutBtn" class="tool-btn" type="button" aria-label="Viewport Layout: 1x1" data-tooltip="Viewport Layout"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1" /></svg></button>
+              <div id="layoutMenu" class="layout-menu" role="menu" aria-label="Viewport layout" hidden></div>
+            </div>
+            <button id="leadModeBtn" class="tool-btn" type="button" aria-label="All Leads" data-tooltip="All Leads"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg></button>
+            <select id="leadSelect"></select>
+            <button id="timeCaliperBtn" class="tool-btn" type="button" aria-label="Time Caliper" data-tooltip="Time Caliper"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4v16M19 4v16M5 12h14M8 9l-3 3 3 3M16 9l3 3-3 3" /></svg></button>
+            <button id="amplitudeCaliperBtn" class="tool-btn" type="button" aria-label="Amplitude Caliper" data-tooltip="Amplitude Caliper"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 19h16M12 5v14M9 8l3-3 3 3M9 16l3 3 3-3" /></svg></button>
+            <button id="clearCalipersBtn" class="tool-btn" type="button" aria-label="Clear Calipers" data-tooltip="Clear Calipers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16" /><path d="M9 7V4h6v3" /><path d="M7 7l1 13h8l1-13" /></svg></button>
+            <button id="fitBtn" class="tool-btn" type="button" aria-label="Fit Waveform" data-tooltip="Fit Waveform"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4" /><path d="M16 4h4v4" /><path d="M8 20H4v-4" /><path d="M16 20h4v-4" /><path d="M4 4l6 6" /><path d="M20 4l-6 6" /><path d="M4 20l6-6" /><path d="M20 20l-6-6" /></svg></button>
+          </div>
+        </div>
+        <div class="calibration-bar">
+          <div class="calibration-controls" aria-label="ECG calibration controls">
+            <label class="control-label">Zoom
+              <select id="speedSelect" aria-label="Paper speed">
+                <option value="auto">auto mm/s</option>
+                <option value="12.5">12.5 mm/s</option>
+                <option value="25">25 mm/s</option>
+                <option value="50">50 mm/s</option>
+                <option value="100">100 mm/s</option>
+              </select>
+            </label>
+            <label class="control-label">
+              <select id="gainSelect" aria-label="Amplitude gain">
+                <option value="auto">auto mm/mV</option>
+                <option value="3">3 mm/mV</option>
+                <option value="5">5 mm/mV</option>
+                <option value="10">10 mm/mV</option>
+                <option value="15">15 mm/mV</option>
+                <option value="20">20 mm/mV</option>
+                <option value="30">30 mm/mV</option>
+              </select>
+            </label>
+            <label class="control-label zoom-control">Zoom:
+              <input id="zoomSlider" type="range" min="50" max="250" step="10" value="100" aria-label="Zoom percent" />
+              <span class="zoom-readout" id="zoomReadout">100%</span>
+            </label>
+          </div>
+          <div class="selection-readout" id="selectionReadout">
+            <strong>-</strong>
+            Minimum: -<br />Maximum: -
+          </div>
+        </div>
+        <div id="viewportGrid" class="viewport-grid layout-1x1"></div>
+        <div class="readout">
+          <div class="card"><div class="label">Cursor Time</div><div class="value" id="cursorTime">-</div></div>
+          <div class="card"><div class="label">Cursor Value</div><div class="value" id="cursorValue">-</div></div>
+          <div class="card"><div class="label">Sampling</div><div class="value" id="sampling">-</div></div>
+          <div class="card"><div class="label">Duration</div><div class="value" id="duration">-</div></div>
+        </div>
+        <div class="comparison" id="comparisonGrid"></div>
+      </main>
+      <aside id="rightPanel">
+        <div class="panel-resizer" id="rightPanelResizer" role="separator" aria-label="Resize Analysis Panel" aria-orientation="vertical"></div>
+        <section class="panel-section">
+          <h2 class="panel-title">Automated ECG impression</h2>
+          <div class="analysis-actions">
+            <button id="analyzePanelBtn" class="tool-btn analyze-primary" type="button"><span>Analyze ECG</span></button>
+            <button id="copyAnalysisPanelBtn" class="tool-btn copy-btn" type="button">Copy result</button>
+          </div>
+          <div id="analysisProgress" class="analysis-progress" role="status" aria-live="polite" hidden>
+            <div class="progress-label"><span id="analysisProgressLabel">Preparing waveform</span><span id="analysisProgressPercent">0%</span></div>
+            <div class="progress-track"><div id="analysisProgressFill" class="progress-fill"></div></div>
+          </div>
+          <div id="analysisResult" class="analysis-result" hidden>
+            <div id="impressionCard" class="impression-card">
+              <div class="impression-kicker">Computer interpretation</div>
+              <div id="impressionHeadline" class="impression-headline"></div>
+              <div id="impressionSummary" class="impression-summary"></div>
+            </div>
+            <div id="findingList" class="finding-list"></div>
+            <div id="analysisDisclaimer" class="analysis-disclaimer"></div>
+          </div>
+          <details id="analysisDetails" class="analysis-details" open><summary>Measurements & copy-ready text</summary><div id="analysisOutput" class="analysis-text">Select Analyze ECG to generate computer interpretation and coded findings.</div></details>
+        </section>
+        <section class="panel-section">
+          <h2 class="panel-title">Markers</h2>
+          <table id="markers" class="data-table"></table>
+        </section>
+        <section class="panel-section" id="annotationSection">
+          <h2 class="panel-title">DICOM Annotations</h2>
+          <table id="measurements" class="data-table"></table>
+        </section>
+        <section class="panel-section">
+          <h2 class="panel-title">Channels</h2>
+          <table id="channels" class="data-table"></table>
+        </section>
+      </aside>
+      <button id="toggleStudyPanelBtn" class="edge-toggle edge-toggle-left" type="button" aria-label="Collapse Study List" title="Collapse Study List"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5" /></svg></button>
+      <button id="toggleRightPanelBtn" class="edge-toggle edge-toggle-right" type="button" aria-label="Collapse Analysis Panel" title="Collapse Analysis Panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 7 5 5-5 5" /></svg></button>
+      </div>
+    </div>
+    <script src="ecg-viewer.js?v=20261015-modern-workspace"></script>
+  </body>
+</html>

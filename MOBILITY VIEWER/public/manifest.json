@@ -1,0 +1,6 @@
+{
+  "name": "VEXA Mobile",
+  "short_name": "VEXA Mobile",
+  "display": "standalone",
+  "start_url": "/"
+}

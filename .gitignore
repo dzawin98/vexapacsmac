@@ -1,0 +1,60 @@
+# --- dependency & artefak build ---
+**/node_modules/
+**/dist/
+**/build/
+**/.vite/
+**/coverage/
+**/.cache/
+**/__pycache__/
+**/.venv/
+*.tsbuildinfo
+*.pyc
+
+# --- data runtime / pasien (TIDAK boleh masuk repo) ---
+DATA/
+PACS/data/
+PACS/import/
+PACS/logs/
+PACS/frame-cache/
+PACS/public.backup-*/
+frame-cache/
+logs/
+scratch/
+*.dcm
+image.db
+
+# --- secret & konfigurasi lokal ---
+.env
+.env.*
+!.env.example
+*.pem
+!scripts/license/keys/public.pem
+*.key
+*.lic
+scripts/license/keys/private.pem
+scripts/license/keys/install-request.json
+RIS/backend/settings.json
+RIS/backend/mwl-debug-outbox/
+DESKTOP VIEWER/server/data/
+DESKTOP VIEWER SSR/server/data/
+MOBILITY VIEWER/server/data/
+.programdata/
+.run/
+*.log
+*.out
+*.err
+
+# --- sampah OS / editor ---
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+.idea/
+.vscode/
+
+# --- installer Windows (tidak dipakai di mac) ---
+installer/payload/
+installer/vendor/
+installer/Output/
+tools/service-monitor/*.exe
+VELOPACS-RIS.git/

@@ -1,0 +1,38 @@
+{
+  "backupRoot": "D:\\VEXAPACS-Backup",
+  "dataPath": "C:\\ProgramData\\VEXAPACS\\DATA",
+  "programDataPath": "C:\\ProgramData\\VEXAPACS",
+  "includeDicomData": true,
+  "includeProgramData": true,
+  "postgres": {
+    "host": "localhost",
+    "port": 5432,
+    "user": "postgres",
+    "password": "velo",
+    "risDb": "vexaris_db",
+    "pacsDb": "vexapacs_db",
+    "binPath": ""
+  },
+  "services": [
+    "VexaRISBackend",
+    "VexaRISFrontend",
+    "VexaPacsDicomweb",
+    "VexaPacsDimse",
+    "VexaMwlService",
+    "VexaDesktopViewer",
+    "VexaMobileViewer",
+    "VexaEcgViewer",
+    "VexaCaddy"
+  ],
+  "retention": {
+    "keepLast": 7
+  },
+  "schedule": {
+    "enabled": true,
+    "frequency": "daily",
+    "time": "23:00",
+    "interval": 1,
+    "daysOfWeek": ["MON"],
+    "dayOfMonth": 1
+  }
+}

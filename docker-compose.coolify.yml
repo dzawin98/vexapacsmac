@@ -1,0 +1,236 @@
+services:
+  postgres:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: veloris_db
+      POSTGRES_USER: vexa
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_64_POSTGRES}
+    volumes:
+      - ${VEXA_DATA_ROOT:-/data/vexa-test}/postgres:/var/lib/postgresql/data
+      - ./deploy/coolify/postgres/init-velopacs-db.sql:/docker-entrypoint-initdb.d/10-velopacs-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  pacs:
+    build:
+      context: .
+      dockerfile: deploy/docker/pacs.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      VEXA_LICENSE_ENFORCE: ${VEXA_LICENSE_ENFORCE:-false}
+      VEXA_LICENSE_FILE: /data/license/license.lic
+      VEXA_LICENSE_PUBLIC_KEY_PATH: /data/license/public.pem
+      DICOMWEB_PACS_STORAGE_PATH: /data/dicom
+      DICOMWEB_PACS_LOG_DIR: /data/logs
+      DICOMWEB_PACS_PORT: "5001"
+      DICOMWEB_PACS_HOST: 0.0.0.0
+      DICOMWEB_PACS_PERMISSIVE_MODE: ${PACS_PERMISSIVE_MODE:-true}
+      DICOMWEB_PACS_METADATA_DB: "true"
+      PACS_DB_HOST: postgres
+      PACS_DB_PORT: "5432"
+      PACS_DB_USER: vexa
+      PACS_DB_PASS: ${SERVICE_PASSWORD_64_POSTGRES}
+      PACS_DB_NAME: velopacs_db
+      DICOMWEB_PACS_MWL_PATH: /data/dicom/_mwl
+      NODE_CONFIG: >-
+        {"source":{"aet":"${PACS_AE_TITLE:-VEXATEST}","ip":"0.0.0.0","port":${PACS_DIMSE_PORT:-5757}},"peers":[]}
+    volumes:
+      - ${VEXA_DATA_ROOT:-/data/vexa-test}/dicom:/data/dicom
+      - ${VEXA_DATA_ROOT:-/data/vexa-test}/pacs-logs:/data/logs
+      - ${VEXA_DATA_ROOT:-/data/vexa-test}/license:/data/license:ro
+    expose:
+      - "5001"
+    ports:
+      - "${PACS_DIMSE_PORT:-5757}:${PACS_DIMSE_PORT:-5757}"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:5001/mwl/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 15s
+      timeout: 8s
+      retries: 12
+      start_period: 30s
+
+  ris-api:
+    build:
+      context: .
+      dockerfile: deploy/docker/ris-backend.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      pacs:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      VEXA_LICENSE_ENFORCE: ${VEXA_LICENSE_ENFORCE:-false}
+      VEXA_LICENSE_FILE: /data/license/license.lic
+      VEXA_LICENSE_PUBLIC_KEY_PATH: /data/license/public.pem
+      PORT: "3001"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: vexa
+      DB_PASS: ${SERVICE_PASSWORD_64_POSTGRES}
+      DB_NAME: veloris_db
+      PACS_DB_HOST: postgres
+      PACS_DB_PORT: "5432"
+      PACS_DB_USER: vexa
+      PACS_DB_PASS: ${SERVICE_PASSWORD_64_POSTGRES}
+      PACS_DB_NAME: velopacs_db
+      DICOMWEB_PACS_ROOT: http://pacs:5001
+      DICOMWEB_PACS_RS_ROOT: http://pacs:5001/rs
+      DICOMWEB_PACS_STORAGE_PATH: /data/dicom
+      DICOMWEB_PACS_PACKAGE_ROOT: /app/PACS
+      DICOMWEB_PACS_AET: ${PACS_AE_TITLE:-VEXATEST}
+      DICOMWEB_PACS_DICOM_HOST: pacs
+      DICOMWEB_PACS_DICOM_PORT: ${PACS_DIMSE_PORT:-5757}
+      DICOMWEB_PACS_MWL_ENDPOINT: http://pacs:5001/mwl/worklists
+      DICOMWEB_CORS_ORIGIN: "*"
+      VEXA_PROGRAM_DATA_DIR: /data/ris
+      VEXA_APP_SETTINGS_PATH: /data/ris/settings.json
+      VEXA_BACKUP_CONFIG_PATH: /data/ris/backup.config.json
+      VEXA_PUBLIC_BASE_URL: ${SERVICE_URL_RIS-WEB_80}
+      PUBLIC_SHARE_BASE_URL: ${SERVICE_URL_RIS-WEB_80}
+      BACKEND_PUBLIC_BASE_URL: ${SERVICE_URL_RIS-WEB_80}
+      VIEWER_TOKEN_BASE_URL: ${SERVICE_URL_RIS-WEB_80}
+      ORDER_OUT_VIEWER_URL: ${SERVICE_URL_DESKTOP-VIEWER_5991}
+      PACS_VIEWER_BASE_URL: ${SERVICE_URL_DESKTOP-VIEWER_5991}
+      PACS_VIEWER_ENABLED: "true"
+      VEXA_DESKTOP_VIEWER_PUBLIC_URL: ${SERVICE_URL_DESKTOP-VIEWER_5991}
+      VEXA_DESKTOP_VIEWER_INTERNAL_URL: http://desktop-viewer:5991
+      VEXA_MOBILE_VIEWER_PUBLIC_URL: ${SERVICE_URL_MOBILE-VIEWER_5992}
+      VEXA_MOBILE_VIEWER_INTERNAL_URL: http://mobile-viewer:5992
+      VEXA_ECG_VIEWER_PUBLIC_URL: ${SERVICE_URL_ECG-VIEWER_7771}
+      VEXA_ECG_VIEWER_INTERNAL_URL: http://ecg-viewer:7771
+      VEXA_DESKTOP_RIS_SHARED_SECRET: ${SERVICE_PASSWORD_64_DESKTOP_RIS}
+      VEXA_MOBILE_RIS_SHARED_SECRET: ${SERVICE_PASSWORD_64_MOBILE_RIS}
+    volumes:
+      - ${VEXA_DATA_ROOT:-/data/vexa-test}/dicom:/data/dicom
+      - ${VEXA_DATA_ROOT:-/data/vexa-test}/ris:/data/ris
+      - ${VEXA_DATA_ROOT:-/data/vexa-test}/license:/data/license:ro
+    expose:
+      - "3001"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3001/api/system/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 15s
+      timeout: 8s
+      retries: 12
+      start_period: 30s
+
+  ris-web:
+    build:
+      context: .
+      dockerfile: deploy/docker/ris-frontend.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      ris-api:
+        condition: service_healthy
+      pacs:
+        condition: service_healthy
+    environment:
+      SERVICE_URL_RIS-WEB_80: /
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+
+  desktop-viewer:
+    build:
+      context: .
+      dockerfile: deploy/docker/desktop-viewer.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      pacs:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      VEXA_LICENSE_ENFORCE: ${VEXA_LICENSE_ENFORCE:-false}
+      VEXA_LICENSE_FILE: /data/license/license.lic
+      VEXA_LICENSE_PUBLIC_KEY_PATH: /data/license/public.pem
+      PORT: "5991"
+      DICOMWEB_PACS_ROOT: http://pacs:5001
+      NEXIA_AUTH_DB: /data/auth/auth-db.json
+      NEXIA_RIS_HEADER_NAME: RIS-Desktop-Sec
+      NEXIA_RIS_SHARED_SECRET: ${SERVICE_PASSWORD_64_DESKTOP_RIS}
+      FFMPEG_PATH: /usr/bin/ffmpeg
+      SERVICE_URL_DESKTOP-VIEWER_5991: /
+    volumes:
+      - ${VEXA_DATA_ROOT:-/data/vexa-test}/desktop-auth:/data/auth
+      - ${VEXA_DATA_ROOT:-/data/vexa-test}/license:/data/license:ro
+    expose:
+      - "5991"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:5991/api/system/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 15s
+      timeout: 8s
+      retries: 12
+      start_period: 30s
+
+  mobile-viewer:
+    build:
+      context: .
+      dockerfile: deploy/docker/mobile-viewer.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      pacs:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      VEXA_LICENSE_ENFORCE: ${VEXA_LICENSE_ENFORCE:-false}
+      VEXA_LICENSE_FILE: /data/license/license.lic
+      VEXA_LICENSE_PUBLIC_KEY_PATH: /data/license/public.pem
+      PORT: "5992"
+      DICOMWEB_PACS_ROOT: http://pacs:5001
+      NEXIA_AUTH_DB: /data/auth/auth-db.json
+      NEXIA_RIS_HEADER_NAME: RIS-Vexa-Mobilesec
+      NEXIA_RIS_SHARED_SECRET: ${SERVICE_PASSWORD_64_MOBILE_RIS}
+      SERVICE_URL_MOBILE-VIEWER_5992: /
+    volumes:
+      - ${VEXA_DATA_ROOT:-/data/vexa-test}/mobile-auth:/data/auth
+      - ${VEXA_DATA_ROOT:-/data/vexa-test}/license:/data/license:ro
+    expose:
+      - "5992"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:5992/api/system/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 15s
+      timeout: 8s
+      retries: 12
+      start_period: 30s
+
+  ecg-viewer:
+    build:
+      context: .
+      dockerfile: deploy/docker/ecg-viewer.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      pacs:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      VEXA_LICENSE_ENFORCE: ${VEXA_LICENSE_ENFORCE:-false}
+      VEXA_LICENSE_FILE: /data/license/license.lic
+      VEXA_LICENSE_PUBLIC_KEY_PATH: /data/license/public.pem
+      ECG_VIEWER_PORT: "7771"
+      DICOM_STORAGE_PATH: /data/dicom
+      DICOMWEB_RS_ROOT: http://pacs:5001/rs
+      SERVICE_URL_ECG-VIEWER_7771: /
+    volumes:
+      - ${VEXA_DATA_ROOT:-/data/vexa-test}/dicom:/data/dicom:ro
+      - ${VEXA_DATA_ROOT:-/data/vexa-test}/license:/data/license:ro
+    expose:
+      - "7771"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:7771/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 15s
+      timeout: 8s
+      retries: 12
+      start_period: 20s

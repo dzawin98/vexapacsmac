@@ -1,0 +1,41 @@
+.git
+.agents
+.claude
+.codex
+.commandcode
+.programdata
+.embedded-git-backup
+VELOPACS-RIS.git
+
+DATA
+logs
+scratch
+installer
+OHIF
+DESKTOP VIEWER SSR
+
+**/node_modules
+**/dist
+**/build
+**/.vite
+**/coverage
+**/.cache
+**/__pycache__
+**/*.log
+**/*.out
+**/*.err
+**/*.tmp
+**/.env
+**/*.pyc
+
+PACS/data
+PACS/logs
+PACS/import
+PACS/public.backup-*
+RIS/backend/mwl-debug-outbox
+RIS/backend/mwl_scp
+RIS/backend/scratch
+RIS/backend/settings.json
+DESKTOP VIEWER/server/data
+MOBILITY VIEWER/server/data
+tools/service-monitor/*.exe

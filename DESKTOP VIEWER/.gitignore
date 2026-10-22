@@ -1,0 +1,9 @@
+@'
+**/dist/
+**/node_modules/
+**/.vite/
+**/coverage/
+.embedded-git-backup/
+VELOPACS-RIS.git/
+*.log
+'@ | Add-Content .gitignore

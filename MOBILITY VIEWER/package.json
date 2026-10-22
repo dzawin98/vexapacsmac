@@ -1,0 +1,47 @@
+{
+  "name": "vexa-mobile-viewer",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "start": "node server/index.mjs",
+    "postinstall": "patch-package"
+  },
+  "dependencies": {
+    "@cornerstonejs/calculate-suv": "1.1.0",
+    "@cornerstonejs/core": "2.1.16",
+    "@cornerstonejs/dicom-image-loader": "2.1.16",
+    "@cornerstonejs/tools": "2.1.16",
+    "dcmjs": "0.33.0",
+    "dicom-parser": "1.8.21",
+    "dicomweb-client": "0.10.4",
+    "jpeg-js": "^0.4.4",
+    "lucide-react": "^1.14.0",
+    "patch-package": "^8.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.15.1",
+    "vite-plugin-wasm": "3.3.0",
+    "zustand": "^5.0.13"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@originjs/vite-plugin-commonjs": "^1.0.3",
+    "@types/node": "^24.12.3",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "eslint": "^10.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "postinstall-postinstall": "^2.1.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.59.2",
+    "vite": "^5.4.21"
+  }
+}
