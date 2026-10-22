@@ -39,7 +39,6 @@ Buka:
 |---|---|
 | RIS (frontend) | <http://127.0.0.1:8080> |
 | PACS DICOMweb | <http://127.0.0.1:5001/rs/studies> |
-| Desktop Viewer | <http://127.0.0.1:5991> |
 | Diagnostic Viewer (SSR, lossless) | <http://127.0.0.1:5994/view> |
 | Mobility Viewer | <http://127.0.0.1:5992> |
 | ECG Viewer | <http://127.0.0.1:7771/viewer> |
@@ -57,8 +56,7 @@ Hentikan semuanya: `./mac/stop-all.sh`
 | `PACS/` | PACS DICOMweb (QIDO-RS, WADO-RS, STOW-RS) + DIMSE SCP/MWL | 5001 (HTTP), 8889 (DIMSE), 8890 (internal) | Node.js + TypeScript (`ts-node`) |
 | `RIS/backend/` | REST API RIS (worklist, patient, dose, report, SIMRS) | 3001 | Node.js (Express) |
 | `RIS/frontend/` | UI RIS (Vite dev server) | 8080 | React + TypeScript + Vite |
-| `DESKTOP VIEWER/` | Viewer utama (frontend + server statis) | 5991 | React + Cornerstone3D + Node |
-| `DESKTOP VIEWER SSR/` | Viewer diagnostik: MPR/SSR, render server-side, JPEG2000 lossless | 5994 | Node + Python (`openjpeg`) |
+| `DESKTOP VIEWER SSR/` | Viewer diagnostik: MPR/SSR, render server-side, JPEG2000 lossless. Menyajikan bundle UI hasil build-nya sendiri (`DESKTOP VIEWER SSR/dist`) | 5994 | React + Cornerstone3D + Node + Python (`openjpeg`) |
 | `MOBILITY VIEWER/` | Viewer mobile/tablet (hybrid SSR) | 5992 | React + Cornerstone3D + Node |
 | `ECG VIEWER/` | Viewer waveform ECG | 7771 | Node + JS |
 | `RIS/backend/mwl_scp/` | Modality Worklist SCP (DICOM C-FIND dari modality) | 5656, AET `NEXIARIS` | Python + pynetdicom |
@@ -74,6 +72,7 @@ Hentikan semuanya: `./mac/stop-all.sh`
 | Path | Alasan |
 |---|---|
 | `OHIF/` | **Viewer lama** (OHIF v3, ~622 MB) — sesuai permintaan tidak diikutkan |
+| `DESKTOP VIEWER/` | **Viewer lama port 5991** — dikeluarkan agar tidak ada dua viewer yang membingungkan. Sejak itu `DESKTOP VIEWER SSR` (5994) menyajikan bundle UI hasil build-nya sendiri (`VIEWER_DIST_DIR=DESKTOP VIEWER SSR/dist`) |
 | `PACS/public/` | Bundle build OHIF lama (~209 MB) yang tadinya disajikan PACS di `/`. Diganti placeholder `index.html` agar `@fastify/static` tetap valid; DICOMweb tidak terpengaruh |
 | `DATA/`, `PACS/data/`, `PACS/import/` | Data pasien / DICOM produksi — tidak boleh masuk repo publik |
 | `PACS/frame-cache/`, `frame-cache/` | Cache frame runtime (regenerasi otomatis) |
@@ -84,9 +83,18 @@ Hentikan semuanya: `./mac/stop-all.sh`
 | `tools/service-monitor/*.exe` | Aplikasi WinForms Windows; source `.cs` tetap disertakan sebagai referensi |
 | `RIS/backend/mwl_scp/.venv/`, `*/server/data/` | Venv Python & data runtime viewer |
 
-> **Catatan penting:** `DESKTOP VIEWER` tetap ikut — walaupun di Windows ia
-> dipanggil lewat port 5991, `DESKTOP VIEWER SSR` (5994) menyajikan bundle UI
-> yang sama lewat `VIEWER_DIST_DIR`. Menghapusnya akan mematikan viewer utama.
+> **Catatan penting — apa yang hilang bersama `DESKTOP VIEWER`:** folder itu bukan
+> salinan identik dari SSR. 18 file hanya ada di sana, antara lain
+> `exportCenter.ts` + `ExportCenterDialog.tsx` (export center), modul
+> ICH segmentation (`ichSegmentation.ts`, `ichMaskRefine.ts`, `ichMagneticLasso.ts`,
+> `ichDicom.ts`), `DicomPrinterConfigPanel.tsx`, `ViewerOverlayConfigPanel.tsx`,
+> `overlayConfig.ts`, `reportAttachments.ts`, `tileFormat.ts`/`TileFormatViewport.tsx`,
+> `LocalProxyMprViewer.tsx`, `ServerMprViewer.tsx`, dan `webglContextWatch.ts`.
+> Artinya di build macOS: viewer 5994 jalan penuh (stack, MPR server-side, 3D,
+> video, SR, ECG waveform, thin client), tetapi **export center, ICH
+> segmentation, tile format, konfigurasi printer/overlay tidak tersedia**.
+> Kalau salah satu fitur itu dibutuhkan di Mac, yang perlu dipindahkan hanya
+> file terkait ke `DESKTOP VIEWER SSR/src`, bukan seluruh folder viewer lama.
 
 ---
 
@@ -165,8 +173,8 @@ chmod +x mac/*.sh mac/services/*.sh mac/backup/*.sh "Start VEXAPACS.command" "St
 Yang dilakukan `setup.sh`:
 
 1. memeriksa `brew`, `node`, `npm`, `python3`, `psql`, `cmake`;
-2. `npm ci` (atau `npm install`) di 9 paket: PACS, RIS backend, RIS frontend,
-   DESKTOP VIEWER, DESKTOP VIEWER SSR, MOBILITY VIEWER, ECG VIEWER,
+2. `npm ci` (atau `npm install`) di 8 paket: PACS, RIS backend, RIS frontend,
+   DESKTOP VIEWER SSR, MOBILITY VIEWER, ECG VIEWER,
    tools/backup-agent, tools/simrs-db-bridge;
 3. membuat dua virtualenv Python:
    - `.venv/pacs` → `pynetdicom`, `psycopg[binary]`, `Pillow`, `pylibjpeg`,
@@ -187,8 +195,8 @@ VEXA_FORCE_INSTALL=1 ./mac/setup.sh   # paksa npm install ulang
 
 ### 3.4 Build bundle viewer
 
-Server statis (5991/5992) dan viewer SSR (5994) menyajikan hasil build, bukan
-source. Build sekali:
+Server statis mobility viewer (5992) dan viewer SSR (5994) menyajikan hasil
+build, bukan source. Build sekali:
 
 ```bash
 ./mac/build-viewers.sh          # hanya yang belum ada
@@ -229,7 +237,6 @@ Setiap service bisa dijalankan sendiri di terminal terpisah:
 ./mac/services/mwl-scp.sh
 ./mac/services/backup-agent.sh
 ./mac/services/simrs-bridge.sh
-./mac/services/desktop-viewer.sh
 ./mac/services/desktop-ssr.sh
 ./mac/services/mobility-viewer.sh
 ./mac/services/ecg-viewer.sh
@@ -371,7 +378,7 @@ Struktur hasil backup:
 ./mac/status.sh
 ```
 
-Yang harus terlihat `UP`: 5001, 3001, 8080, 3099, 3109, 5991, 5992, 5994, 7771,
+Yang harus terlihat `UP`: 5001, 3001, 8080, 3099, 3109, 5992, 5994, 7771,
 8889, 5656.
 
 Uji manual:
@@ -547,8 +554,7 @@ vexapacsmac/
 ├── RIS/
 │   ├── backend/                # API + mwl_scp/
 │   └── frontend/               # UI RIS
-├── DESKTOP VIEWER/             # viewer utama + server statis
-├── DESKTOP VIEWER SSR/         # viewer diagnostik (MPR/SSR)
+├── DESKTOP VIEWER SSR/         # viewer diagnostik (MPR/SSR) + bundle UI sendiri
 ├── MOBILITY VIEWER/            # viewer mobile
 ├── ECG VIEWER/                 # viewer ECG
 ├── tools/                      # backup-agent, simrs-db-bridge, runtime

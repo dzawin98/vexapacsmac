@@ -35,8 +35,6 @@ scripts/license/keys/private.pem
 scripts/license/keys/install-request.json
 RIS/backend/settings.json
 RIS/backend/mwl-debug-outbox/
-DESKTOP VIEWER/server/data/
-DESKTOP VIEWER SSR/server/data/
 MOBILITY VIEWER/server/data/
 .programdata/
 .run/

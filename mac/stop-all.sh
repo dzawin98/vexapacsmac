@@ -4,7 +4,7 @@ set -uo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/common.sh"
 load_env_defaults
 
-SERVICES=("ecg-viewer" "desktop-ssr" "mobility-viewer" "desktop-viewer" \
+SERVICES=("ecg-viewer" "desktop-ssr" "mobility-viewer" \
           "ris-frontend" "mwl-scp" "simrs-bridge" "backup-agent" \
           "ris-backend" "pacs-dimse" "pacs-web")
 

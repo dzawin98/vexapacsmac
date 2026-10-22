@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# mac/build-viewers.sh — build bundle produksi viewer (dibutuhkan server statis 5991/5992/5994).
+# mac/build-viewers.sh — build bundle produksi viewer (dibutuhkan server statis 5992 & 5994).
 #
 #   ./mac/build-viewers.sh            # build yang belum ada
 #   ./mac/build-viewers.sh --force    # build ulang semuanya
@@ -29,7 +29,6 @@ build_one() {
 }
 
 rc=0
-build_one "DESKTOP VIEWER"  || rc=1
-build_one "MOBILITY VIEWER" || rc=1
-# SSR memakai ulang dist "DESKTOP VIEWER" lewat VIEWER_DIST_DIR, jadi tidak wajib build sendiri.
+build_one "DESKTOP VIEWER SSR" || rc=1
+build_one "MOBILITY VIEWER"    || rc=1
 exit "${rc}"

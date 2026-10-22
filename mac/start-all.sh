@@ -17,7 +17,7 @@ need_python
 need_postgres
 
 SERVICES=("pacs-web" "pacs-dimse" "ris-backend" "backup-agent" "simrs-bridge" "mwl-scp" \
-          "ris-frontend" "desktop-viewer" "mobility-viewer" "desktop-ssr" "ecg-viewer")
+          "ris-frontend" "mobility-viewer" "desktop-ssr" "ecg-viewer")
 
 echo
 echo "============================================================"
@@ -28,7 +28,6 @@ printf '  RIS Backend     http://127.0.0.1:%s\n' "${RIS_BACKEND_PORT}"
 printf '  Backup Agent    http://127.0.0.1:%s\n' "${BACKUP_AGENT_PORT}"
 printf '  SIMRS DB Bridge http://127.0.0.1:%s\n' "${SIMRS_DB_BRIDGE_PORT}"
 printf '  PACS DICOMweb   http://127.0.0.1:%s\n' "${PACS_HTTP_PORT}"
-printf '  Desktop Viewer  http://127.0.0.1:%s\n' "${DESKTOP_VIEWER_PORT}"
 printf '  Primary Viewer  http://127.0.0.1:%s/view\n' "${DESKTOP_SSR_PORT}"
 printf '  Mobility Viewer http://127.0.0.1:%s\n' "${MOBILITY_VIEWER_PORT}"
 printf '  ECG Viewer      http://127.0.0.1:%s/viewer\n' "${ECG_VIEWER_PORT}"
@@ -78,7 +77,6 @@ if [ "${VIEWER_DEV_MODE}" != "true" ]; then
   "${MAC_DIR}/build-viewers.sh"
 fi
 
-start_bg "desktop-viewer"  "${ROOT}" "${MAC_DIR}/services/desktop-viewer.sh"
 start_bg "mobility-viewer" "${ROOT}" "${MAC_DIR}/services/mobility-viewer.sh"
 if [ "${VIEWER_THIN_SSR_ENABLED}" = "true" ]; then
   start_bg "desktop-ssr" "${ROOT}" "${MAC_DIR}/services/desktop-ssr.sh"
@@ -86,7 +84,6 @@ fi
 start_bg "ecg-viewer" "${ROOT}" "${MAC_DIR}/services/ecg-viewer.sh"
 
 log "Menunggu viewer siap…"
-wait_port "${DESKTOP_VIEWER_PORT}" 45 || warn "Desktop Viewer belum siap"
 wait_port "${MOBILITY_VIEWER_PORT}" 45 || warn "Mobility Viewer belum siap"
 if [ "${VIEWER_THIN_SSR_ENABLED}" = "true" ]; then
   wait_port "${DESKTOP_SSR_PORT}" 45 || warn "Diagnostic Viewer (SSR) belum siap"

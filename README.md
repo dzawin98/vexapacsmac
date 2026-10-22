@@ -25,7 +25,6 @@ brew services start postgresql@16
 |---|---|
 | RIS | <http://127.0.0.1:8080> |
 | PACS DICOMweb | <http://127.0.0.1:5001/rs> |
-| Desktop Viewer | <http://127.0.0.1:5991> |
 | Diagnostic Viewer (SSR) | <http://127.0.0.1:5994/view> |
 | Mobility Viewer | <http://127.0.0.1:5992> |
 | ECG Viewer | <http://127.0.0.1:7771/viewer> |
@@ -39,8 +38,7 @@ mac/                    launcher macOS (bash) — setup, start, stop, status, do
 PACS/                   DICOMweb + DIMSE SCP + MWL (Node + Python)
 RIS/backend/            REST API RIS (port 3001) + mwl_scp/ (Python, port 5656)
 RIS/frontend/           UI RIS (Vite dev server, port 8080)
-DESKTOP VIEWER/         viewer utama (port 5991) + bundle UI untuk SSR
-DESKTOP VIEWER SSR/     viewer diagnostik MPR/SSR (port 5994)
+DESKTOP VIEWER SSR/     viewer diagnostik MPR/SSR (port 5994) + bundle UI sendiri
 MOBILITY VIEWER/        viewer mobile/tablet (port 5992)
 ECG VIEWER/             viewer waveform ECG (port 7771)
 tools/                  backup-agent, simrs-db-bridge, runtime (cache/job queue)
@@ -51,8 +49,9 @@ installer/              installer Windows (referensi, tidak dipakai di mac)
 
 ## Yang tidak disertakan
 
-- **Viewer lama (OHIF)** — `OHIF/` dan bundle `PACS/public/` lama tidak diikutkan.
-  Viewer yang dipakai: Desktop (5991), Diagnostic SSR (5994), Mobility (5992).
+- **Viewer lama** — `OHIF/`, `DESKTOP VIEWER/` (port 5991), dan bundle
+  `PACS/public/` lama tidak diikutkan. Viewer yang dipakai: Diagnostic SSR
+  (5994, menyajikan `DESKTOP VIEWER SSR/dist` sendiri) dan Mobility (5992).
 - **Data pasien / DICOM produksi**, database, `.env`, kunci privat lisensi,
   `node_modules/`, `dist/`, payload installer Windows.
 

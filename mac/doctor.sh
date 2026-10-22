@@ -47,7 +47,7 @@ else
 fi
 
 section "4. Dependency Node"
-for app in "PACS" "RIS/backend" "RIS/frontend" "DESKTOP VIEWER" "DESKTOP VIEWER SSR" "MOBILITY VIEWER" "ECG VIEWER" "tools/backup-agent" "tools/simrs-db-bridge"; do
+for app in "PACS" "RIS/backend" "RIS/frontend" "DESKTOP VIEWER SSR" "MOBILITY VIEWER" "ECG VIEWER" "tools/backup-agent" "tools/simrs-db-bridge"; do
   if [ -d "${ROOT}/${app}/node_modules" ]; then ok "${app}"; else warn "${app} belum npm install"; fi
 done
 if [ -d "${ROOT}/PACS/node_modules/dicom-dimse-native" ]; then
@@ -59,7 +59,7 @@ if [ -d "${ROOT}/PACS/node_modules/dicom-dimse-native" ]; then
 fi
 
 section "5. Bundle viewer"
-for app in "DESKTOP VIEWER" "MOBILITY VIEWER"; do
+for app in "DESKTOP VIEWER SSR" "MOBILITY VIEWER"; do
   if [ -f "${ROOT}/${app}/dist/index.html" ]; then ok "${app}/dist"; else warn "${app}/dist belum dibuild (./mac/build-viewers.sh)"; fi
 done
 

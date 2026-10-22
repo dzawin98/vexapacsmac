@@ -71,7 +71,6 @@ NODE_APPS=(
   "PACS"
   "RIS/backend"
   "RIS/frontend"
-  "DESKTOP VIEWER"
   "DESKTOP VIEWER SSR"
   "MOBILITY VIEWER"
   "ECG VIEWER"
